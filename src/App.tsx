@@ -12,7 +12,16 @@ import StaffManagementPanel from './features/finance/StaffManagementPanel';
 type ViewType = 'main' | 'portal' | 'period-attendance' | 'teacher-salary' | 'teacherPortal' | 'staff-management';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState<ViewType>('main');
+  // 1. URL se shuru mein hi check kar lein ke konsa view kholna hai
+  const [currentView, setCurrentView] = useState<ViewType>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (view === 'teacher-portal') return 'teacherPortal';
+    if (view === 'student-portal') return 'portal';
+    if (view === 'staff-management') return 'staff-management';
+    return 'main';
+  });
+
   const [showCalculator, setShowCalculator] = useState(false);
 
   // --- Calculator Dragging States & Logic ---
@@ -52,20 +61,6 @@ export default function App() {
     });
   };
   // ----------------------------------------
-
-  // 1. App load hotay hi URL check karna ke koi specific link open kiya gaya hai ya nahi
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const view = params.get('view');
-
-    if (view === 'teacher-portal') {
-      setCurrentView('teacherPortal');
-    } else if (view === 'student-portal') {
-      setCurrentView('portal');
-    } else if (view === 'staff-management') {
-      setCurrentView('staff-management');
-    }
-  }, []);
 
   // 2. View change hone par URL ko update karne ka function
   const handleViewChange = (viewType: ViewType, urlParam?: string) => {
@@ -147,7 +142,7 @@ export default function App() {
               if ((currentView as string) === 'staff-management') {
                 handleViewChange('main');
               } else {
-                handleViewChange('staff-management', 'staff-management');
+                handleViewCard: handleViewChange('staff-management', 'staff-management');
               }
             }}
             style={{ 
@@ -224,4 +219,4 @@ export default function App() {
       )}
     </div>
   );
-}
+}git add .
