@@ -9,8 +9,10 @@ import { CalculatorModal } from './components/CalculatorModal';
 import { TeacherPortal } from './components/TeacherPortal';
 import StaffManagementPanel from './features/finance/StaffManagementPanel';
 
+type ViewType = 'main' | 'portal' | 'period-attendance' | 'teacher-salary' | 'teacherPortal' | 'staff-management';
+
 export default function App() {
-  const [currentView, setCurrentView] = useState<'main' | 'portal' | 'period-attendance' | 'teacher-salary' | 'teacherPortal' | 'staff-management'>('main');
+  const [currentView, setCurrentView] = useState<ViewType>('main');
   const [showCalculator, setShowCalculator] = useState(false);
 
   // --- Calculator Dragging States & Logic ---
@@ -66,10 +68,9 @@ export default function App() {
   }, []);
 
   // 2. View change hone par URL ko update karne ka function
-  const handleViewChange = (viewType: 'main' | 'portal' | 'period-attendance' | 'teacher-salary' | 'teacherPortal' | 'staff-management', urlParam?: string) => {
+  const handleViewChange = (viewType: ViewType, urlParam?: string) => {
     setCurrentView(viewType);
     
-    // URL mein query parameter set ya remove karna bina page refresh kiye
     if (urlParam) {
       const newUrl = `${window.location.pathname}?view=${urlParam}`;
       window.history.pushState({ path: newUrl }, '', newUrl);
@@ -77,6 +78,9 @@ export default function App() {
       window.history.pushState({ path: window.location.pathname }, '', window.location.pathname);
     }
   };
+
+  // Check if current view is a dedicated external portal (Student or Teacher direct view)
+  const isDedicatedPortal = currentView === 'portal' || currentView === 'teacherPortal';
 
   return (
     <div style={{ 
@@ -93,83 +97,85 @@ export default function App() {
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', margin: '15px 0', flexWrap: 'wrap' }}></div>
 
-      {/* Toggle Buttons Bar */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', width: '100%' }}>
-        
-        {/* Student Portal Toggle Button */}
-        <button 
-          onClick={() => {
-            if (currentView === 'portal') {
-              handleViewChange('main');
-            } else {
-              handleViewChange('portal', 'student-portal');
-            }
-          }}
-          style={{ 
-            background: 'linear-gradient(135deg, #7c3aed 0%, #23123f 100%)', 
-            color: '#fff', border: '1px solid #8b5cf6', padding: '12px 20px', 
-            borderRadius: '10px', cursor: 'pointer', fontWeight: '600',
-            flex: '1 1 200px', fontSize: '14px', textAlign: 'center',
-            boxShadow: '0 0 15px rgba(37, 18, 70, 0.3)', transition: 'all 0.2s ease'
-          }}      
-        >
-          {currentView === 'portal' ? 'Back to Admin Dashboard' : 'Switch to Student Portal'}
-        </button>
+      {/* Toggle Buttons Bar - Hide when viewing dedicated Student or Teacher Portals via direct link */}
+      {!isDedicatedPortal && (
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', width: '100%' }}>
+          
+          {/* Student Portal Toggle Button */}
+          <button 
+            onClick={() => {
+              if ((currentView as string) === 'portal') {
+                handleViewChange('main');
+              } else {
+                handleViewChange('portal', 'student-portal');
+              }
+            }}
+            style={{ 
+              background: 'linear-gradient(135deg, #7c3aed 0%, #23123f 100%)', 
+              color: '#fff', border: '1px solid #8b5cf6', padding: '12px 20px', 
+              borderRadius: '10px', cursor: 'pointer', fontWeight: '600',
+              flex: '1 1 200px', fontSize: '14px', textAlign: 'center',
+              boxShadow: '0 0 15px rgba(37, 18, 70, 0.3)', transition: 'all 0.2s ease'
+            }}      
+          >
+            {(currentView as string) === 'portal' ? 'Back to Admin Dashboard' : 'Switch to Student Portal'}
+          </button>
 
-        {/* Teacher Portal Toggle Button */}
-        <button 
-          onClick={() => {
-            if (currentView === 'teacherPortal') {
-              handleViewChange('main');
-            } else {
-              handleViewChange('teacherPortal', 'teacher-portal');
-            }
-          }}
-          style={{ 
-            background: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)', 
-            color: '#fff', border: '1px solid #38bdf8', padding: '12px 20px', 
-            borderRadius: '10px', cursor: 'pointer', fontWeight: '600',
-            flex: '1 1 200px', fontSize: '14px', textAlign: 'center',
-            boxShadow: '0 0 15px rgba(2, 132, 199, 0.3)', transition: 'all 0.2s ease'
-          }}      
-        >
-          {currentView === 'teacherPortal' ? 'Back to Admin Dashboard' : 'Switch to Teacher Portal'}
-        </button>
+          {/* Teacher Portal Toggle Button */}
+          <button 
+            onClick={() => {
+              if ((currentView as string) === 'teacherPortal') {
+                handleViewChange('main');
+              } else {
+                handleViewChange('teacherPortal', 'teacher-portal');
+              }
+            }}
+            style={{ 
+              background: 'linear-gradient(135deg, #0284c7 0%, #0f172a 100%)', 
+              color: '#fff', border: '1px solid #38bdf8', padding: '12px 20px', 
+              borderRadius: '10px', cursor: 'pointer', fontWeight: '600',
+              flex: '1 1 200px', fontSize: '14px', textAlign: 'center',
+              boxShadow: '0 0 15px rgba(2, 132, 199, 0.3)', transition: 'all 0.2s ease'
+            }}      
+          >
+            {(currentView as string) === 'teacherPortal' ? 'Back to Admin Dashboard' : 'Switch to Teacher Portal'}
+          </button>
 
-        {/* Staff Management Toggle Button */}
-        <button 
-          onClick={() => {
-            if (currentView === 'staff-management') {
-              handleViewChange('main');
-            } else {
-              handleViewChange('staff-management', 'staff-management');
-            }
-          }}
-          style={{ 
-            background: 'linear-gradient(135deg, #059669 0%, #064e3b 100%)', 
-            color: '#fff', border: '1px solid #34d399', padding: '12px 20px', 
-            borderRadius: '10px', cursor: 'pointer', fontWeight: '600',
-            flex: '1 1 200px', fontSize: '14px', textAlign: 'center',
-            boxShadow: '0 0 15px rgba(5, 150, 105, 0.3)', transition: 'all 0.2s ease'
-          }}      
-        >
-          {currentView === 'staff-management' ? 'Back to Admin Dashboard' : ' Staff Management'}
-        </button>
+          {/* Staff Management Toggle Button */}
+          <button 
+            onClick={() => {
+              if ((currentView as string) === 'staff-management') {
+                handleViewChange('main');
+              } else {
+                handleViewChange('staff-management', 'staff-management');
+              }
+            }}
+            style={{ 
+              background: 'linear-gradient(135deg, #059669 0%, #064e3b 100%)', 
+              color: '#fff', border: '1px solid #34d399', padding: '12px 20px', 
+              borderRadius: '10px', cursor: 'pointer', fontWeight: '600',
+              flex: '1 1 200px', fontSize: '14px', textAlign: 'center',
+              boxShadow: '0 0 15px rgba(5, 150, 105, 0.3)', transition: 'all 0.2s ease'
+            }}      
+          >
+            {(currentView as string) === 'staff-management' ? 'Back to Admin Dashboard' : ' Staff Management'}
+          </button>
 
-        {/* Calculator Toggle Button */}
-        <button 
-          onClick={() => setShowCalculator(true)}
-          style={{ 
-            background: 'linear-gradient(135deg, #dd3d72 0%, #500711 100%)', 
-            color: '#fff', border: '1px solid #8b5cf6', padding: '10px 18px', 
-            borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
-            textAlign: 'center', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)', transition: 'all 0.2s ease',
-            position: 'fixed', top: '20px', left: '20px', zIndex: 9999
-          }}      
-        >
-            Calculator
-        </button>
-      </div>
+          {/* Calculator Toggle Button */}
+          <button 
+            onClick={() => setShowCalculator(true)}
+            style={{ 
+              background: 'linear-gradient(135deg, #dd3d72 0%, #500711 100%)', 
+              color: '#fff', border: '1px solid #8b5cf6', padding: '10px 18px', 
+              borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
+              textAlign: 'center', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)', transition: 'all 0.2s ease',
+              position: 'fixed', top: '20px', left: '20px', zIndex: 9999
+            }}      
+          >
+              Calculator
+          </button>
+        </div>
+      )}
 
       {/* Views Rendering Logic */}
       {currentView === 'portal' ? (
@@ -210,7 +216,7 @@ export default function App() {
             left: `${calcPosition.x}px`,
             zIndex: 10000,
             cursor: 'move',
-            userSelect: 'none', // Text select hone se rokne ke liye
+            userSelect: 'none',
           }}
         >
           <CalculatorModal isOpen={showCalculator} onClose={() => setShowCalculator(false)} />
