@@ -14,8 +14,10 @@ export const Navbar: React.FC = () => {
     <nav style={{ 
       background: '#1976d2', 
       color: 'white', 
-      padding: '15px 20px', 
+      padding: '20px 20px',
+      margin:'10px', 
       display: 'flex', 
+      flexWrap: 'wrap',
       justifyContent: 'space-between', 
       alignItems: 'center', 
       borderRadius: '6px', 
