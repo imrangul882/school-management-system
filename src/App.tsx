@@ -1,4 +1,4 @@
-import './app.css';
+import './App.css';
 import { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { StudentPortal } from './components/StudentPortal';
