@@ -3,7 +3,7 @@ import { useAppSelector, useAppDispatch } from '../app/hooks';
 import { fetchPeriodAttendanceFromSupabase } from '../features/attendance/periodAttendanceSlice';
 
 interface TeacherPortalProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export const TeacherPortal: React.FC<TeacherPortalProps> = ({ onBack }) => {
@@ -53,12 +53,14 @@ export const TeacherPortal: React.FC<TeacherPortalProps> = ({ onBack }) => {
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', background: '#2b3b5c', padding: '16px 24px', borderRadius: '12px', border: '1px solid #1f2937' }}>
         <h2 style={{ margin: 0, fontSize: '20px', color: '#f9fafb' }}> Teacher Portal (Salary & Daily Lecture Log)</h2>
-        <button 
-          onClick={onBack}
-          style={{ background: '#475569', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
-        >
-          ← Back to Dashboard
-        </button>
+       {onBack && (
+          <button 
+            onClick={onBack}
+            style={{ background: '#475569', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+          >
+            ← Back to Dashboard
+          </button>
+        )}
       </div>
 
       {!activeTeacher ? (

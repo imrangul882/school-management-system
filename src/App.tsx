@@ -12,7 +12,7 @@ import StaffManagementPanel from './features/finance/StaffManagementPanel';
 type ViewType = 'main' | 'portal' | 'period-attendance' | 'teacher-salary' | 'teacherPortal' | 'staff-management';
 
 export default function App() {
-  // 1. URL se shuru mein hi check kar lein ke konsa view kholna hai
+  // 1. URL se check karein ke konsa view kholna hai
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
@@ -63,11 +63,13 @@ export default function App() {
   // ----------------------------------------
 
   // 2. View change hone par URL ko update karne ka function
-  const handleViewChange = (viewType: ViewType, urlParam?: string) => {
+  const handleViewChange = (viewType: ViewType, urlParam?: string, includeAdminFlag?: boolean) => {
     setCurrentView(viewType);
     
     if (urlParam) {
-      const newUrl = `${window.location.pathname}?view=${urlParam}`;
+      // Agar admin se aaye hain toh URL mein &from=admin lag jayega
+      const adminFlag = includeAdminFlag ? '&from=admin' : '';
+      const newUrl = `${window.location.pathname}?view=${urlParam}${adminFlag}`;
       window.history.pushState({ path: newUrl }, '', newUrl);
     } else {
       window.history.pushState({ path: window.location.pathname }, '', window.location.pathname);
@@ -76,6 +78,10 @@ export default function App() {
 
   // Check if current view is a dedicated external portal (Student or Teacher direct view)
   const isDedicatedPortal = currentView === 'portal' || currentView === 'teacherPortal';
+
+  // Yeh check karega ke kya URL mein 'from=admin' mojood hai ya nahi
+  const searchParams = new URLSearchParams(window.location.search);
+  const isFromAdmin = searchParams.get('from') === 'admin';
 
   return (
     <div style={{ 
@@ -102,7 +108,8 @@ export default function App() {
               if ((currentView as string) === 'portal') {
                 handleViewChange('main');
               } else {
-                handleViewChange('portal', 'student-portal');
+                // Yahan true bheja hai taake URL mein from=admin add ho jaye
+                handleViewChange('portal', 'student-portal', true);
               }
             }}
             style={{ 
@@ -122,7 +129,8 @@ export default function App() {
               if ((currentView as string) === 'teacherPortal') {
                 handleViewChange('main');
               } else {
-                handleViewChange('teacherPortal', 'teacher-portal');
+                // Yahan bhi true bheja hai taake URL mein from=admin add ho jaye
+                handleViewChange('teacherPortal', 'teacher-portal', true);
               }
             }}
             style={{ 
@@ -142,7 +150,7 @@ export default function App() {
               if ((currentView as string) === 'staff-management') {
                 handleViewChange('main');
               } else {
-                handleViewCard: handleViewChange('staff-management', 'staff-management');
+                handleViewChange('staff-management', 'staff-management', false);
               }
             }}
             style={{ 
@@ -175,11 +183,17 @@ export default function App() {
       {/* Views Rendering Logic */}
       {currentView === 'portal' ? (
         <div style={{ padding: '10px 0', width: '100%', boxSizing: 'border-box' }}>
-          <StudentPortal />
+          {/* Sirf tab onBack pass hoga jab URL mein from=admin mojood ho */}
+          <StudentPortal 
+            onBack={isFromAdmin ? () => handleViewChange('main') : undefined} 
+          />
         </div>
       ) : currentView === 'teacherPortal' ? (
         <div style={{ padding: '10px 0', width: '100%', boxSizing: 'border-box' }}>
-          <TeacherPortal onBack={() => handleViewChange('main')} />
+          {/* Sirf tab onBack pass hoga jab URL mein from=admin mojood ho */}
+          <TeacherPortal 
+            onBack={isFromAdmin ? () => handleViewChange('main') : undefined} 
+          />
         </div>
       ) : currentView === 'staff-management' ? (
         <div style={{ padding: '10px 0', width: '100%', boxSizing: 'border-box' }}>

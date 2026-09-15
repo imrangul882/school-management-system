@@ -3,8 +3,12 @@ import { useAppSelector, useAppDispatch } from '../app/hooks';
 import { updateFeeStatus } from '../features/students/studentSlice';
 import { fetchPeriodAttendanceFromSupabase } from '../features/attendance/periodAttendanceSlice';
 
-export const StudentPortal: React.FC = () => {
-  const dispatch = useAppDispatch();
+interface StudentPortalProps {
+  onBack?: () => void; // Optional prop for admin navigation
+}
+
+export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
+    const dispatch = useAppDispatch();
   const students = useAppSelector((state: any) => state.students?.students || []);
   const periodRecords = useAppSelector((state: any) => state.periodAttendance?.periodRecords || []);
   const attendanceLoading = useAppSelector((state: any) => state.periodAttendance?.loading);
@@ -127,9 +131,21 @@ export const StudentPortal: React.FC = () => {
         boxShadow: '0 0 15px rgba(37, 18, 70, 0.3)',
         transition: 'all 0.2s ease'
     }}>
-      <h2 style={{ textAlign: 'center', color: '#fff', fontSize: 'clamp(18px, 4vw, 22px)', marginBottom: '20px' }}>
-        🎓 Student Portal (Fee & Academic History)
-      </h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        <h2 style={{ margin: 0, color: '#fff', fontSize: 'clamp(18px, 4vw, 22px)' }}>
+           Student Portal (Fee & Academic History)
+        </h2>
+        
+        {/* Sirf tabhi nazar ayega jub admin dashboard ke zariye onBack pass kiya jaye */}
+        {onBack && (
+          <button 
+            onClick={onBack}
+            style={{ background: '#475569', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+          >
+            ← Back to Dashboard
+          </button>
+        )}
+      </div>
       
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', margin: '15px 0', flexWrap: 'wrap' }}>
         <input 
