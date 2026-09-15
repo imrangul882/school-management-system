@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient'; // Apna sahi Supabase path check kar lein
 
 export const AdminPasswordRequests = () => {
