@@ -22,7 +22,7 @@ export const CalculatorModal: React.FC<CalculatorModalProps> = ({ isOpen, onClos
 
                 // Agar plus ya minus ke sath percentage ho (jaise 500 - 10%)
                 // Toh pehli rakam ka utna percent calculate ho kar adjust ho jaye ga
-                sanitizedInput = sanitizedInput.replace(/([0-9.]+)\s*([\+\-])\s*([0-9.]+)%/g, (match, base, op, percent) => {
+               sanitizedInput = sanitizedInput.replace(/([0-9.]+)\s*([\+\-])\s*([0-9.]+)%/g, (_match, base, op, percent) => {
                     return `${base} ${op} (${base} * ${percent} / 100)`;
                 });
 
