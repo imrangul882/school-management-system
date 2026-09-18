@@ -13,11 +13,12 @@ export interface AttendanceRecord {
   outTime?: string;
   pickedBy?: string;
   status: 'In School' | 'Left School';
+  created_at?: string; // 💡 Date track karne ke liye
 }
 
 interface AttendanceState {
   records: AttendanceRecord[];
-  smsLogs: { id: string; message: string; time: string; phone: string }[];
+  smsLogs: { id: string; message: string; time: string; phone: string; created_at: string }[]; // 💡 SMS logs mein date add ki
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
@@ -44,7 +45,8 @@ export const fetchAttendanceFromSupabase = createAsyncThunk(
       inTime: r.inTime,
       outTime: r.outTime,
       pickedBy: r.pickedBy,
-      status: r.status
+      status: r.status,
+      created_at: r.created_at || r.inTime // Fallback date
     })) as AttendanceRecord[];
   }
 );
@@ -53,6 +55,8 @@ export const fetchAttendanceFromSupabase = createAsyncThunk(
 export const addThumbInToSupabase = createAsyncThunk(
   'attendance/addThumbIn',
   async (payload: { studentId: string; studentName: string; studentClass: string; section: string; parentPhone: string; inTime: string }) => {
+    const todayISO = new Date().toISOString(); // 💡 Current exact date & time (e.g. 2026-09-17T...)
+    
     const { data, error } = await supabase
       .from('attendance_records')
       .insert([
@@ -63,7 +67,8 @@ export const addThumbInToSupabase = createAsyncThunk(
           section: payload.section,
           parentPhone: payload.parentPhone,
           inTime: payload.inTime,
-          status: 'In School'
+          status: 'In School',
+          created_at: todayISO // 💡 Supabase mein date save hogi
         }
       ])
       .select();
@@ -80,12 +85,13 @@ export const addThumbInToSupabase = createAsyncThunk(
       section: inserted.section,
       parentPhone: inserted.parentPhone,
       inTime: inserted.inTime,
-      status: inserted.status
+      status: inserted.status,
+      created_at: inserted.created_at || todayISO
     } as AttendanceRecord;
   }
 );
 
-// 3. Thumb OUT par database record update karne ke liye (Fixed with Number conversion)
+// 3. Thumb OUT par database record update karne ke liye
 export const updateThumbOutInSupabase = createAsyncThunk(
   'attendance/updateThumbOut',
   async (payload: { recordId: string; outTime: string; pickedBy: string }) => {
@@ -96,7 +102,7 @@ export const updateThumbOutInSupabase = createAsyncThunk(
         pickedBy: payload.pickedBy,
         status: 'Left School'
       })
-      .eq('id', Number(payload.recordId)) // String ko number mein convert kiya taake bigint se match ho jaye
+      .eq('id', Number(payload.recordId))
       .select();
 
     if (error) throw error;
@@ -111,19 +117,44 @@ export const updateThumbOutInSupabase = createAsyncThunk(
     };
   }
 );
+export const addSmsLogToSupabase = createAsyncThunk(
+  'attendance/addSmsLogToSupabase',
+  async ({ phone, message, time }: { phone: string; message: string; time: string }) => {
+    const todayISO = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('sms_logs') // Apni Supabase table ka naam yahan confirm kar lein
+      .insert([{ phone, message, time, created_at: todayISO }])
+      .select();
+    
+    if (error) throw error;
+    const inserted = data && data[0] ? data[0] : null;
+    if (!inserted) throw new Error("Failed to insert SMS log");
+
+    return {
+      id: inserted.id.toString(),
+      phone: inserted.phone,
+      message: inserted.message,
+      time: inserted.time,
+      created_at: inserted.created_at || todayISO
+    };
+  }
+);
+
 
 export const attendanceSlice = createSlice({
   name: 'attendance',
   initialState,
   reducers: {
     addSmsLog: (state, action: PayloadAction<{ phone: string; message: string; time: string }>) => {
+      const todayDateStr = new Date().toISOString(); // 💡 SMS log ke sath aaj ki date save ho rahi hai
       state.smsLogs.unshift({
         id: Date.now().toString(),
-        ...action.payload
+        ...action.payload,
+        created_at: todayDateStr
       });
     }
   },
-  extraReducers: (builder) => {
+ extraReducers: (builder) => {
     builder
       .addCase(fetchAttendanceFromSupabase.fulfilled, (state, action) => {
         state.status = 'succeeded';
@@ -139,9 +170,18 @@ export const attendanceSlice = createSlice({
           state.records[index].pickedBy = action.payload.pickedBy;
           state.records[index].status = action.payload.status;
         }
+      })
+      .addCase(addSmsLogToSupabase.fulfilled, (state, action) => {
+        state.smsLogs.unshift({
+          id: action.payload.id,
+          phone: action.payload.phone,
+          message: action.payload.message,
+          time: action.payload.time,
+          created_at: action.payload.created_at
+        });
       });
   }
-});
+}); // <-- Yeh bracket slice ko close kar raha hai
 
 export const { addSmsLog } = attendanceSlice.actions;
 export default attendanceSlice.reducer;

@@ -22,24 +22,40 @@ export const AttendancePanel: React.FC = () => {
   const classesList = ['Montessori', 'Nursery', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'];
   const sectionsList = ['All', 'Section A', 'Section B', 'Section C'];
 
-  useEffect(() => {
+ useEffect(() => {
     dispatch(fetchAttendanceFromSupabase());
   }, [dispatch]);
 
-  // 💡 AAJ KI DATE KA FILTER (UI ke liye condition)
-  // Yeh check karega ke record sirf aaj ki tareekh ka ho taake agle din screen automatic khali hojaye
+  // 💡 Aaj ki date nikalne ka tareeqa
   const todayDateString = new Date().toISOString().split('T')[0]; // Format: "2026-09-17"
-  
+
+  // 👇 Yahan yeh nayi useEffect lagani hai taake checkboxes checked rahein
+  useEffect(() => {
+    if (attendanceRecords && attendanceRecords.length > 0) {
+      const todayInStudentIds = attendanceRecords
+        .filter((r: any) => {
+          if (!r.created_at) return false;
+          const recordDateOnly = r.created_at.split('T')[0].split(' ')[0];
+          return recordDateOnly === todayDateString && r.status === 'In School';
+        })
+        .map((r: any) => r.studentId);
+
+      setCheckedStudentIds(prev => Array.from(new Set([...prev, ...todayInStudentIds])));
+    }
+  }, [attendanceRecords, todayDateString]);
+
   const todayAttendanceRecords = attendanceRecords.filter((r: any) => {
-    if (!r.created_at) return true; // Agar date column na ho toh fallback
-    return r.created_at.startsWith(todayDateString);
+    // ... baaki aapka code wese hi rahega    if (!r.created_at) return false;
+    const recordDateOnly = r.created_at.split('T')[0].split(' ')[0];
+    return recordDateOnly === todayDateString;
   });
 
   const todaySmsLogs = smsLogs.filter((l: any) => {
-    if (!l.created_at) return true;
-    return l.created_at.startsWith(todayDateString);
+    if (!l.created_at) return false;
+    // Sirf date ka hissa alag karna (jaise "2026-09-17")
+    const logDateOnly = l.created_at.split('T')[0].split(' ')[0];
+    return logDateOnly === todayDateString;
   });
-
   // Filter students for Thumb IN
   const filteredStudents = students.filter((s: any) => {
     const matchesClass = s.studentClass === selectedClass;
@@ -65,8 +81,13 @@ export const AttendancePanel: React.FC = () => {
       setCheckedStudentIds(Array.from(new Set([...checkedStudentIds, ...allFilteredIds])));
     }
   };
+  const isStudentAlreadyIn = (studentId: string) => {
+    return todayAttendanceRecords.some(
+      (r: any) => String(r.studentId) === String(studentId) && r.status === 'In School'
+    );
+  };
 
-  const handleBulkThumbIn = async () => {
+ const handleBulkThumbIn = async () => {
     if (checkedStudentIds.length === 0) {
       alert("Please select at least one student!");
       return;
@@ -79,9 +100,7 @@ export const AttendancePanel: React.FC = () => {
       const student = students.find((s: any) => s.id === studentId);
       if (!student) continue;
 
-      const alreadyInside = todayAttendanceRecords.some((r: any) => r.studentId === studentId && r.status === 'In School');
-      if (alreadyInside) continue;
-
+      if (isStudentAlreadyIn(studentId)) continue;
       try {
         await dispatch(addThumbInToSupabase({ 
           studentId: student.id, studentName: student.name, studentClass: student.studentClass,
@@ -120,6 +139,8 @@ export const AttendancePanel: React.FC = () => {
     setCheckedOutRecordIds(allSelected ? [] : allRecordIds);
   };
 
+  
+
   const handleBulkThumbOut = async () => {
     if (checkedOutRecordIds.length === 0) {
       alert("Please select at least one student!");
@@ -133,9 +154,11 @@ export const AttendancePanel: React.FC = () => {
       const record = todayAttendanceRecords.find((r: any) => r.id === recordId);
       if (!record) continue;
 
-      const student = students.find((s: any) => s.id === record.studentId);
+      const student = students.find((s: any) => String(s.id) === String(record.studentId));
       const parentPhone = student?.parentPhone || record?.parentPhone;
       const pickedBy = pickedByMap[record.studentId] || bulkPickedBy;
+
+      const nameToUse = record?.studentName || student?.name || 'Student';
 
       try {
         await dispatch(updateThumbOutInSupabase({ recordId: record.id, outTime: currentTime, pickedBy })).unwrap();
@@ -143,7 +166,8 @@ export const AttendancePanel: React.FC = () => {
         continue;
       }
 
-      const message = `Alert: Your child ${record.studentName} has left school at ${currentTime}, picked by ${pickedBy}.`;
+      const message = `Alert: Your child ${nameToUse} has left school at ${currentTime}, picked by ${pickedBy}.`;
+      
       if (parentPhone && parentPhone !== 'Not Provided') {
         let formattedPhone = parentPhone.replace(/[^0-9]/g, '');
         if (formattedPhone.startsWith('0')) formattedPhone = '92' + formattedPhone.slice(1);
@@ -153,27 +177,42 @@ export const AttendancePanel: React.FC = () => {
         openedCount++;
       }
     }
+
     alert(`Thumb OUT processed for ${openedCount} students!`);
     setCheckedOutRecordIds([]);
+    
+    // ✅ List foran update karne ke liye sahi fetch action dispatch kardiya gaya hai
+    dispatch(fetchAttendanceFromSupabase()); 
   };
 
   const handleThumbOut = async (recordId: string, studentId: string) => {
     const record = todayAttendanceRecords.find((r: any) => r.id === recordId || r.studentId === studentId);
+    if (!record) return; // Safety check
+    
     const student = students.find((s: any) => s.id === studentId);
     const parentPhone = student?.parentPhone || record?.parentPhone;
     const pickedBy = pickedByMap[studentId] || 'Father';
     const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     
-    if (!record) return;
+    const nameToUse = record?.studentName || student?.name || 'Student';
 
-    await dispatch(updateThumbOutInSupabase({ recordId: record.id, outTime: currentTime, pickedBy })).unwrap();
-    const message = `Alert: Your child has safely left the school at ${currentTime}, picked by ${pickedBy}.`;
-    
-    if (parentPhone) {
-      let formattedPhone = parentPhone.replace(/[^0-9]/g, '');
-      if (formattedPhone.startsWith('0')) formattedPhone = '92' + formattedPhone.slice(1);
-      dispatch(addSmsLog({ phone: formattedPhone, message, time: currentTime }));
-      window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+    try {
+      await dispatch(updateThumbOutInSupabase({ recordId: record.id, outTime: currentTime, pickedBy })).unwrap();
+      
+      const message = `Alert: Your child ${nameToUse} has left school at ${currentTime}, picked by ${pickedBy}.`;
+      if (parentPhone && parentPhone !== 'Not Provided') {
+        let formattedPhone = parentPhone.replace(/[^0-9]/g, '');
+        if (formattedPhone.startsWith('0')) formattedPhone = '92' + formattedPhone.slice(1);
+        
+        dispatch(addSmsLog({ phone: formattedPhone, message, time: currentTime }));
+        window.open(`https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`, '_blank');
+      }
+
+      // ✅ Single thumb out ke baad bhi list refresh karne ke liye dispatch kardiya gaya hai
+      dispatch(fetchAttendanceFromSupabase());
+
+    } catch (error) {
+      console.error("Thumb Out Error:", error);
     }
   };
 
@@ -182,7 +221,6 @@ export const AttendancePanel: React.FC = () => {
   };
 
   const insideStudents = todayAttendanceRecords.filter((r: any) => r.status === 'In School');
-
   return (
     <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '24px', fontFamily: 'system-ui, sans-serif' }}>
       

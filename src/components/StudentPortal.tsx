@@ -2,42 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../app/hooks';
 import { updateFeeStatus } from '../features/students/studentSlice';
 import { fetchPeriodAttendanceFromSupabase } from '../features/attendance/periodAttendanceSlice';
+import { supabase } from '../supabaseClient';
 
 interface StudentPortalProps {
-  onBack?: () => void; // Optional prop for admin navigation
+  onBack?: () => void;
 }
 
 export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
-    const dispatch = useAppDispatch();
-  const students = useAppSelector((state: any) => state.students?.students || []);
+  const dispatch = useAppDispatch();
   const periodRecords = useAppSelector((state: any) => state.periodAttendance?.periodRecords || []);
   const attendanceLoading = useAppSelector((state: any) => state.periodAttendance?.loading);
   
- const [searchId, setSearchId] = useState<string>('');
+  // Tabs: 'login' | 'register' | 'forgot'
+  const [activeTab, setActiveTab] = useState<'login' | 'register' | 'forgot'>('login');
+
+  // Login States
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // Register States (Create Password)
+  const [regIdentifier, setRegIdentifier] = useState('');
+  const [regCnic, setRegCnic] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
+  // Forgot Password State
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+
   const [searchedStudent, setSearchedStudent] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
   const [paymentMethod, setPaymentMethod] = useState<string>('JazzCash Mobile Account');
 
-  // --- Yahan se automatic date ka code lagana hai ---
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonthNum = String(now.getMonth() + 1).padStart(2, '0');
   
-  // Mahino ke naam ke liye array
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const currentMonthShort = monthNames[now.getMonth()];
+  const currentActiveMonth = `${currentMonthShort} ${currentYear}`;
+  const [selectedAttendanceMonth, setSelectedAttendanceMonth] = useState(`${currentYear}-${currentMonthNum}`);
 
-  const currentActiveMonth = `${currentMonthShort} ${currentYear}`; // e.g. "Sep 2026"
-  const [selectedAttendanceMonth, setSelectedAttendanceMonth] = useState(`${currentYear}-${currentMonthNum}`); // e.g. "2026-09"
-  // --------------------------------------------------
-
-  // Component load hotay hi Supabase se period attendance records fetch kar lena
   useEffect(() => {
     dispatch(fetchPeriodAttendanceFromSupabase() as any);
   }, [dispatch]);
-  // Component load hotay hi Supabase se period attendance records fetch kar lena
- 
 
   const defaultYearlyFee = [
     { month: 'Jan 2026', type: 'Monthly', dueDate: '11-Jan-2026', voucherId: '2026-01', status: 'Paid' },
@@ -53,40 +60,152 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     { month: 'Nov 2026', type: 'Monthly', dueDate: '11-Nov-2026', voucherId: '2026-11', status: 'Pending' },
     { month: 'Dec 2026', type: 'Monthly', dueDate: '11-Dec-2026', voucherId: '2026-12', status: 'Pending' },
   ];
-  // const currentVoucher = defaultYearlyFee.find(v => v.month === currentActiveMonth) || defaultYearlyFee[7];
 
-  const handleSearch = (e: React.FormEvent) => {
+  // --- 1. STUDENT LOGIN LOGIC (Supabase) ---
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const query = searchId.trim().toLowerCase();
-    if (!query) {
-      alert('Please enter Roll No or Name.');
+    if (!identifier.trim() || !password.trim()) {
+      alert('Please enter Roll No/Name and Password.');
       return;
     }
 
-    const found = students.find((s: any) => 
-      (s.rollNo && s.rollNo.toLowerCase() === query) || 
-      s.name.toLowerCase().includes(query)
-    );
-    
-    if (found) {
-      const studentFeeAmount = Number(found.feeAmount || found.fee || 3000);
-      const uniqueKey = found.rollNo ? found.rollNo : found.id;
-      const savedHistory = localStorage.getItem(`student_fee_${uniqueKey}`);
-      
-      let feeHistory = savedHistory ? JSON.parse(savedHistory) : defaultYearlyFee.map(item => ({
-        ...item,
-        amount: studentFeeAmount, 
-        voucherId: `2026-${uniqueKey}-${item.voucherId.split('-')[1]}`
-      }));
+    const query = identifier.trim().toLowerCase();
+    const { data: liveStudents, error } = await supabase.from('students').select('*');
 
-      setSearchedStudent({
-        ...found,
-        feeHistory
-      });
-    } else {
-      setSearchedStudent(null);
-      alert('Student not found! Please check Roll No or Name.');
+    if (error) {
+      alert('Database error: ' + error.message);
+      return;
     }
+
+    const found = liveStudents?.find((s: any) => {
+      const matchId = 
+        s.name?.toLowerCase().includes(query) || 
+        s.rollNo?.toString().toLowerCase() === query ||
+        s.roll_no?.toString().toLowerCase() === query ||
+        s.id?.toString() === query;
+      
+      const dbPass = (s.password || '').toString().trim();
+      return matchId && dbPass === password.trim();
+    });
+
+    if (found) {
+      setupStudentData(found);
+    } else {
+      alert('Invalid Roll No/Name or Password! Please check your credentials.');
+    }
+  };
+
+  // --- 2. CREATE PASSWORD / REGISTER LOGIC ---
+ // --- 2. CREATE PASSWORD / REGISTER LOGIC ---
+  const handleRegisterPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regIdentifier.trim() || !regCnic.trim() || !newPassword.trim()) {
+      alert('Please fill in all fields to create your password.');
+      return;
+    }
+
+    const query = regIdentifier.trim().toLowerCase();
+    const { data: liveStudents, error: fetchError } = await supabase.from('students').select('*');
+
+    if (fetchError) {
+      alert('Database error: ' + fetchError.message);
+      return;
+    }
+
+    // Student ko find karein (Roll No, Name ya ID ke zariye)
+    const studentToUpdate = liveStudents?.find((s: any) => {
+      const dbName = (s.name || '').toLowerCase();
+      const dbRollNo = (s.rollNo || s.roll_no || '').toString().toLowerCase();
+      const dbId = (s.id || '').toString().toLowerCase();
+      
+      return dbName.includes(query) || dbRollNo === query || dbId === query;
+    });
+
+    if (!studentToUpdate) {
+      alert('Student not found in the database. Contact admin.');
+      return;
+    }
+
+    // Update password and cnic in Supabase database without strict pre-check
+    const { error } = await supabase
+      .from('students')
+      .update({ 
+        password: newPassword.trim(),
+        cnic: regCnic.trim() 
+      })
+      .eq('id', studentToUpdate.id);
+
+    if (error) {
+      alert('Failed to set password: ' + error.message);
+    } else {
+      alert('Password registered successfully! You can now log in.');
+      setActiveTab('login');
+      setNewPassword('');
+      setRegCnic('');
+      setRegIdentifier('');
+    }
+  };
+
+  // --- 3. FORGOT PASSWORD REQUEST LOGIC ---
+  const handleForgotRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotIdentifier.trim()) {
+      alert('Please enter your Roll No or Name.');
+      return;
+    }
+
+    const query = forgotIdentifier.trim().toLowerCase();
+    const { data: liveStudents, error: fetchError } = await supabase.from('students').select('*');
+
+    if (fetchError) {
+      alert('Database error: ' + fetchError.message);
+      return;
+    }
+
+    const studentToReset = liveStudents?.find((s: any) => {
+      const dbName = (s.name || '').toLowerCase();
+      const dbRollNo = (s.rollNo || s.roll_no || '').toString().toLowerCase();
+      const dbId = (s.id || '').toString().toLowerCase();
+      
+      return dbName.includes(query) || dbRollNo === query || dbId === query;
+    });
+
+    if (!studentToReset) {
+      alert('Student record not found.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('students')
+      .update({ reset_requested: true })
+      .eq('id', studentToReset.id);
+
+    if (error) {
+      alert('Error sending request: ' + error.message);
+    } else {
+      alert('Password reset request sent to Admin successfully!');
+      setActiveTab('login');
+      setForgotIdentifier('');
+    }
+  };
+
+  const setupStudentData = (found: any) => {
+    const studentFeeAmount = Number(found.feeAmount || found.fee || 3000);
+    const uniqueKey = found.rollNo || found.roll_no || found.id;
+    const savedHistory = localStorage.getItem(`student_fee_${uniqueKey}`);
+    
+    let feeHistory = savedHistory ? JSON.parse(savedHistory) : defaultYearlyFee.map(item => ({
+      ...item,
+      amount: studentFeeAmount, 
+      voucherId: `2026-${uniqueKey}-${item.voucherId.split('-')[1]}`
+    }));
+
+    setSearchedStudent({
+      ...found,
+      rollNo: found.rollNo || found.roll_no,
+      studentClass: found.studentClass || found.class || found.className,
+      feeHistory
+    });
   };
 
   const handlePayFee = () => {
@@ -107,10 +226,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
 
   const currentMonthRecord = searchedStudent?.feeHistory?.filter((item: any) => item.month === currentActiveMonth) || [];
 
-  // Student ki attendance aur lecture records filter karna
   const studentAttendanceRecords = searchedStudent 
     ? periodRecords.filter((r: any) => {
-        const matchesStudent = (r.rollNo && searchedStudent.rollNo && r.rollNo.toLowerCase() === searchedStudent.rollNo.toLowerCase()) ||
+        const studentRoll = searchedStudent.rollNo || searchedStudent.roll_no;
+        const matchesStudent = (r.rollNo && studentRoll && r.rollNo.toLowerCase() === studentRoll.toLowerCase()) ||
                                (r.studentName && searchedStudent.name && r.studentName.toLowerCase().includes(searchedStudent.name.toLowerCase()));
         const matchesMonth = r.date?.startsWith(selectedAttendanceMonth);
         return matchesStudent && matchesMonth;
@@ -136,7 +255,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
            Student Portal (Fee & Academic History)
         </h2>
         
-        {/* Sirf tabhi nazar ayega jub admin dashboard ke zariye onBack pass kiya jaye */}
         {onBack && (
           <button 
             onClick={onBack}
@@ -146,25 +264,137 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
           </button>
         )}
       </div>
-      
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '8px', margin: '15px 0', flexWrap: 'wrap' }}>
-        <input 
-          type="text"
-          placeholder="Enter Roll No or Name..."
-          value={searchId}
-          onChange={(e) => setSearchId(e.target.value)}
-          style={{ flex: 1, minWidth: '180px', padding: '10px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box', background: '#fff', color: '#000' }}
-        />
-        <button 
-          type="submit"
-          style={{ background: '#2196F3', color: '#fff', border: 'none', padding: '10px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}
-        >
-          Search
-        </button>
-      </form>
 
-      {searchedStudent ? (
+      {!searchedStudent ? (
+        <div style={{ maxWidth: '450px', margin: '30px auto', background: '#111827', padding: '25px', borderRadius: '12px', border: '1px solid #1f2937', textAlign: 'left', boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}>
+          
+          {/* Tabs Navigation */}
+          <div style={{ display: 'flex', marginBottom: '20px', background: '#1f2937', borderRadius: '8px', padding: '4px' }}>
+            <button 
+              type="button"
+              onClick={() => setActiveTab('login')} 
+              style={{ flex: 1, background: activeTab === 'login' ? '#2563eb' : 'transparent', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+              Login
+            </button>
+            <button 
+              type="button"
+              onClick={() => setActiveTab('register')} 
+              style={{ flex: 1, background: activeTab === 'register' ? '#2563eb' : 'transparent', color: '#fff', border: 'none', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>
+              Create Password
+            </button>
+          </div>
+
+          {/* TAB 1: LOGIN */}
+          {activeTab === 'login' && (
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h3 style={{ margin: '0 0 10px 0', color: '#f3f4f6', fontSize: '18px', textAlign: 'center' }}>Student Login</h3>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>Roll No or Name *</label>
+                <input 
+                  type="text"
+                  placeholder="Enter Roll No or Name..."
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #374151', background: '#1f2937', color: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>Password *</label>
+                <input 
+                  type="password"
+                  placeholder="Enter password..."
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #374151', background: '#1f2937', color: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <button type="button" onClick={() => setActiveTab('forgot')} style={{ background: 'transparent', border: 'none', color: '#60a5fa', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline' }}>
+                  Forgot Password?
+                </button>
+              </div>
+              <button type="submit" style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Login
+              </button>
+            </form>
+          )}
+
+          {/* TAB 2: CREATE PASSWORD */}
+          {activeTab === 'register' && (
+            <form onSubmit={handleRegisterPassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h3 style={{ margin: '0 0 10px 0', color: '#f3f4f6', fontSize: '18px', textAlign: 'center' }}>Create Password</h3>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>Roll No or Name *</label>
+                <input 
+                  type="text"
+                  placeholder="Enter Roll No or Name..."
+                  value={regIdentifier}
+                  onChange={(e) => setRegIdentifier(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #374151', background: '#1f2937', color: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>CNIC / B-Form Number *</label>
+                <input 
+                  type="text"
+                  placeholder="Enter CNIC or B-Form..."
+                  value={regCnic}
+                  onChange={(e) => setRegCnic(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #374151', background: '#1f2937', color: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>New Password *</label>
+                <input 
+                  type="password"
+                  placeholder="Choose new password..."
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #374151', background: '#1f2937', color: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <button type="submit" style={{ background: '#059669', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Register & Set Password
+              </button>
+            </form>
+          )}
+
+          {/* TAB 3: FORGOT PASSWORD */}
+          {activeTab === 'forgot' && (
+            <form onSubmit={handleForgotRequest} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <h3 style={{ margin: '0 0 10px 0', color: '#f3f4f6', fontSize: '18px', textAlign: 'center' }}>Reset Password Request</h3>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#d1d5db', marginBottom: '4px' }}>Roll No or Name *</label>
+                <input 
+                  type="text"
+                  placeholder="Enter Roll No or Name..."
+                  value={forgotIdentifier}
+                  onChange={(e) => setForgotIdentifier(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #374151', background: '#1f2937', color: '#fff', boxSizing: 'border-box' }}
+                />
+              </div>
+              <button type="submit" style={{ background: '#d97706', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Send Request to Admin
+              </button>
+              <button type="button" onClick={() => setActiveTab('login')} style={{ background: 'transparent', border: '1px solid #374151', color: '#9ca3af', padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>
+                Back to Login
+              </button>
+            </form>
+          )}
+
+        </div>
+      ) : (
         <div>
+          {/* Logout Button Header */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+            <button 
+              onClick={() => { setSearchedStudent(null); setPassword(''); setIdentifier(''); }}
+              style={{ background: '#dc2626', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+            >
+              Logout Portal
+            </button>
+          </div>
+
           {/* Student Profile Card */}
           <div style={{ margin: '15px 0', padding: '15px', background: '#111827', borderRadius: '6px', borderLeft: '4px solid #2196F3', display: 'flex', alignItems: 'center', gap: '15px', boxSizing: 'border-box', flexWrap: 'wrap' }}>
             {searchedStudent.image ? (
@@ -182,10 +412,10 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
             <div style={{ flex: 1, minWidth: '200px' }}>
               <h3 style={{ margin: '0 0 6px 0', color: '#fff', fontSize: '16px' }}>Welcome, {searchedStudent.name}!</h3>
               <p style={{ margin: '4px 0', color: '#cbd5e1', fontSize: '13px', wordBreak: 'break-word' }}>
-                <strong>Roll No:</strong> {searchedStudent.rollNo || 'N/A'} | <strong>Father Name:</strong> {searchedStudent.fatherName}
-              </p>        
+                <strong>Roll No:</strong> {searchedStudent.rollNo || 'N/A'} | <strong>Father Name:</strong> {searchedStudent.fatherName || 'N/A'}
+              </p>       
               <p style={{ margin: '4px 0', color: '#cbd5e1', fontSize: '13px', wordBreak: 'break-word' }}>
-                <strong>Class:</strong> {searchedStudent.studentClass} | <strong>Section:</strong> {searchedStudent.section}
+                <strong>Class:</strong> {searchedStudent.studentClass || 'N/A'} | <strong>Section:</strong> {searchedStudent.section || 'N/A'}
               </p>
             </div>
           </div>
@@ -300,8 +530,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
             </div>
           </div>
         </div>
-      ) : (
-        <p style={{ color: '#e2e8f0', textAlign: 'center', margin: '30px 0', fontSize: '13px' }}>Please enter Student Roll No or Name to view details.</p>
       )}
 
       {/* Payment Modal */}
