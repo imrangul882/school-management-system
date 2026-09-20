@@ -12,7 +12,6 @@ import StaffManagementPanel from './features/finance/StaffManagementPanel';
 type ViewType = 'main' | 'portal' | 'period-attendance' | 'teacher-salary' | 'teacherPortal' | 'staff-management';
 
 export default function App() {
-  // 1. URL se check karein ke konsa view kholna hai
   const [currentView, setCurrentView] = useState<ViewType>(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
@@ -62,12 +61,10 @@ export default function App() {
   };
   // ----------------------------------------
 
-  // 2. View change hone par URL ko update karne ka function
   const handleViewChange = (viewType: ViewType, urlParam?: string, includeAdminFlag?: boolean) => {
     setCurrentView(viewType);
     
     if (urlParam) {
-      // Agar admin se aaye hain toh URL mein &from=admin lag jayega
       const adminFlag = includeAdminFlag ? '&from=admin' : '';
       const newUrl = `${window.location.pathname}?view=${urlParam}${adminFlag}`;
       window.history.pushState({ path: newUrl }, '', newUrl);
@@ -76,10 +73,7 @@ export default function App() {
     }
   };
 
-  // Check if current view is a dedicated external portal (Student or Teacher direct view)
   const isDedicatedPortal = currentView === 'portal' || currentView === 'teacherPortal';
-
-  // Yeh check karega ke kya URL mein 'from=admin' mojood hai ya nahi
   const searchParams = new URLSearchParams(window.location.search);
   const isFromAdmin = searchParams.get('from') === 'admin';
 
@@ -92,15 +86,15 @@ export default function App() {
       boxSizing: 'border-box', 
       overflowX: 'hidden',
       fontFamily: 'Arial, sans-serif',
-      position: 'relative'
+      position: 'relative',
+      paddingTop: '70px' // Fixed Navbar ki wajah se content ko neechay karne ke liye
     }}>
-      <Navbar />
+      {/* Navbar with Calculator Prop */}
+      <Navbar onOpenCalculator={() => setShowCalculator(true)} />
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', margin: '15px 0', flexWrap: 'wrap' }}></div>
-
-      {/* Toggle Buttons Bar - Hide when viewing dedicated Student or Teacher Portals via direct link */}
+      {/* Toggle Buttons Bar */}
       {!isDedicatedPortal && (
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', width: '100%' }}>
+        <div style={{ display: 'flex', gap: '12px', margin: '20px 0', flexWrap: 'wrap', width: '100%' }}>
           
           {/* Student Portal Toggle Button */}
           <button 
@@ -108,7 +102,6 @@ export default function App() {
               if ((currentView as string) === 'portal') {
                 handleViewChange('main');
               } else {
-                // Yahan true bheja hai taake URL mein from=admin add ho jaye
                 handleViewChange('portal', 'student-portal', true);
               }
             }}
@@ -129,7 +122,6 @@ export default function App() {
               if ((currentView as string) === 'teacherPortal') {
                 handleViewChange('main');
               } else {
-                // Yahan bhi true bheja hai taake URL mein from=admin add ho jaye
                 handleViewChange('teacherPortal', 'teacher-portal', true);
               }
             }}
@@ -164,33 +156,18 @@ export default function App() {
             {(currentView as string) === 'staff-management' ? 'Back to Admin Dashboard' : ' Staff Management'}
           </button>
 
-          {/* Calculator Toggle Button */}
-          <button 
-            onClick={() => setShowCalculator(true)}
-            style={{ 
-              background: 'linear-gradient(135deg, #dd3d72 0%, #500711 100%)', 
-              color: '#fff', border: '1px solid #8b5cf6', padding: '10px 18px', 
-              borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px',
-              textAlign: 'center', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.5)', transition: 'all 0.2s ease',
-              position: 'fixed', top: '20px', left: '20px', zIndex: 9999
-            }}      
-          >
-              Calculator
-          </button>
         </div>
       )}
 
       {/* Views Rendering Logic */}
       {currentView === 'portal' ? (
         <div style={{ padding: '10px 0', width: '100%', boxSizing: 'border-box' }}>
-          {/* Sirf tab onBack pass hoga jab URL mein from=admin mojood ho */}
           <StudentPortal 
             onBack={isFromAdmin ? () => handleViewChange('main') : undefined} 
           />
         </div>
       ) : currentView === 'teacherPortal' ? (
         <div style={{ padding: '10px 0', width: '100%', boxSizing: 'border-box' }}>
-          {/* Sirf tab onBack pass hoga jab URL mein from=admin mojood ho */}
           <TeacherPortal 
             onBack={isFromAdmin ? () => handleViewChange('main') : undefined} 
           />

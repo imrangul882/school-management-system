@@ -30,7 +30,7 @@ export const Revenuefinance: React.FC = () => {
   const totalSalariesAndExpenses = totalMonthlySalaries + totalExpenses;
 
   return (
-    <div style={{ marginTop: '30px', padding: '24px', background: '#1e293b', borderRadius: '12px', border: '1px solid #334155' }}>
+    <div style={{ marginTop: '20px', padding: '50px', background: '#1e293b', borderRadius: '12px', border: '1px solid #e3e9f0' }}>
       <h3 style={{ margin: '0 0 16px 0', color: '#f8fafc', fontSize: '18px', fontWeight: '600' }}>
         School Financial & Revenue Analytics
       </h3>
@@ -38,18 +38,18 @@ export const Revenuefinance: React.FC = () => {
       {/* Teachers, Staff aur Expenses ke alag-alag salaries/bills ke cards */}
       <div style={{ display: 'flex', gap: '15px', marginBottom: '20px', flexWrap: 'wrap' }}>
         
-        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', border: '1px solid #334155', flex: 1, minWidth: '180px' }}>
+        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', border: '2px solid #4b75af', flex: 1, minWidth: '180px' }}>
           <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Total Teachers Salary</span>
           <span style={{ fontSize: '18px', fontWeight: '700', color: '#38bdf8' }}>Rs. {totalTeacherSalaries}</span>
         </div>
         
-        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', border: '1px solid #334155', flex: 1, minWidth: '180px' }}>
+        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', border: '2px solid #2bb437', flex: 1, minWidth: '180px' }}>
           <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Total Staff Salary</span>
           <span style={{ fontSize: '18px', fontWeight: '700', color: '#34d399' }}>Rs. {totalStaffSalaries}</span>
         </div>
 
         {/* Total Expenses Box */}
-        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', border: '1px solid #f59e0b', flex: 1, minWidth: '180px' }}>
+        <div style={{ background: '#0f172a', padding: '12px 16px', borderRadius: '8px', border: '2px solid #f59e0b', flex: 1, minWidth: '180px' }}>
           <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block' }}>Total Expenses</span>
           <span style={{ fontSize: '18px', fontWeight: '700', color: '#f59e0b' }}>Rs. {totalExpenses}</span>
         </div>

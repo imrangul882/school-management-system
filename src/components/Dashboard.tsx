@@ -34,8 +34,9 @@ const totalFeeCollected = students.filter((s: any) => s.feeStatus === "Paid").re
   const totalSalariesAndExp = totalTeacherSalaries + totalStaffSalaries + totalExpenses;
 
   // Net balance calculation
-  const netBalance = totalFeeCollected - totalSalariesAndExp;  return (
-    <div style={{ width: '100%', minHeight: '100vh', background: '#090d16', color: '#f8fafc', padding: '24px', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' }}>
+  const netBalance = totalFeeCollected - totalSalariesAndExp; 
+   return (
+    <div style={{ width: '100%', minHeight: '100vh', background: '#51754d', color: '#f8fafc', padding: '24px', boxSizing: 'border-box', fontFamily: 'Inter, sans-serif' }}>
     
     {/* Top Action Buttons Bar */}
     <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap', width: '100%' }}>
@@ -124,7 +125,7 @@ const totalFeeCollected = students.filter((s: any) => s.feeStatus === "Paid").re
   </div>
 
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
-      <div style={{ width: '100%', background: '#111827', borderRadius: '14px', border: '1px solid #1f2937', padding: '20px', boxSizing: 'border-box' }}>
+      <div style={{ width: '100%', background: '#182133', borderRadius: '14px', border: '1px solid #6a7481',marginTop:'20px', padding: '40px', boxSizing: 'border-box' }}>
         <Revenuefinance />
       </div>
 

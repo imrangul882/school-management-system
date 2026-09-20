@@ -61,7 +61,26 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
     { month: 'Dec 2026', type: 'Monthly', dueDate: '11-Dec-2026', voucherId: '2026-12', status: 'Pending' },
   ];
 
-  // --- 1. STUDENT LOGIN LOGIC (Supabase) ---
+ // 1. Sara data store karne ke liye state
+  const [allStudents, setAllStudents] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState<boolean>(true);
+
+  // 2. Portal khulrte hi background mein sara data pehle se fetch kar lein
+  useEffect(() => {
+    dispatch(fetchPeriodAttendanceFromSupabase() as any);
+    fetchStudentsData();
+  }, [dispatch]);
+
+  const fetchStudentsData = async () => {
+    setDataLoading(true);
+    const { data, error } = await supabase.from('students').select('*');
+    if (!error && data) {
+      setAllStudents(data);
+    }
+    setDataLoading(false);
+  };
+
+  // --- 3. FAST LOGIN LOGIC (Local Array Search - No Waiting!) ---
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!identifier.trim() || !password.trim()) {
@@ -69,15 +88,15 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
       return;
     }
 
-    const query = identifier.trim().toLowerCase();
-    const { data: liveStudents, error } = await supabase.from('students').select('*');
-
-    if (error) {
-      alert('Database error: ' + error.message);
+    if (dataLoading) {
+      alert('Data is still loading, please wait a second...');
       return;
     }
 
-    const found = liveStudents?.find((s: any) => {
+    const query = identifier.trim().toLowerCase();
+
+    // Pehle se fetched data mein se foran find karein (Super Fast)
+    const found = allStudents.find((s: any) => {
       const matchId = 
         s.name?.toLowerCase().includes(query) || 
         s.rollNo?.toString().toLowerCase() === query ||
@@ -94,7 +113,6 @@ export const StudentPortal: React.FC<StudentPortalProps> = ({ onBack }) => {
       alert('Invalid Roll No/Name or Password! Please check your credentials.');
     }
   };
-
   // --- 2. CREATE PASSWORD / REGISTER LOGIC ---
  // --- 2. CREATE PASSWORD / REGISTER LOGIC ---
   const handleRegisterPassword = async (e: React.FormEvent) => {
