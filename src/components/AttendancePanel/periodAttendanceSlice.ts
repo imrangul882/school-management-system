@@ -11,9 +11,6 @@ export interface PeriodAttendanceRecord {
   section: string;
   period: string;
   topicDetail?: string;
-  
-  
-  
   status: string;
 }
 
@@ -29,7 +26,6 @@ const initialState: PeriodAttendanceState = {
   error: null,
 };
 
-// 1. Fetch data and map lowercase DB columns to camelCase for frontend/Redux
 export const fetchPeriodAttendanceFromSupabase = createAsyncThunk(
   'periodAttendance/fetchFromSupabase',
   async (_, { rejectWithValue }) => {
@@ -41,7 +37,6 @@ export const fetchPeriodAttendanceFromSupabase = createAsyncThunk(
 
       if (error) throw error;
 
-      // Map lowercase database columns to interface camelCase properties
       const mappedData: PeriodAttendanceRecord[] = (data || []).map((item: any) => ({
         id: item.id,
         date: item.date,
@@ -62,7 +57,6 @@ export const fetchPeriodAttendanceFromSupabase = createAsyncThunk(
   }
 );
 
-// 2. Save data to Supabase using lowercase column names
 export const savePeriodAttendanceToSupabase = createAsyncThunk(
   'periodAttendance/saveToSupabase',
   async (payload: {
@@ -94,7 +88,6 @@ export const savePeriodAttendanceToSupabase = createAsyncThunk(
 
       if (error) throw error;
 
-      // Return camelCase mapped objects for Redux state compatibility
       const savedRecordsForState: PeriodAttendanceRecord[] = rowsToInsert.map(row => ({
         date: row.date,
         className: row.classname,

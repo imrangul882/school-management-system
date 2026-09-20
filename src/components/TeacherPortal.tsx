@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../app/hooks';
-import { fetchPeriodAttendanceFromSupabase } from '../features/attendance/periodAttendanceSlice';
+import { fetchPeriodAttendanceFromSupabase } from './AttendancePanel/periodAttendanceSlice';
 import { supabase } from '../supabaseClient'; // Apne project ke mutabiq supabase client ka path check kar lein
 
 interface TeacherPortalProps {

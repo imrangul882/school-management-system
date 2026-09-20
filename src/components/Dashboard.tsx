@@ -2,7 +2,7 @@ import React from 'react';
 import { useAppSelector } from '../app/hooks';
 import { StudentList } from '../features/students/StudentList';
 import { ExpenseList } from '../features/finance/ExpenseList';
-import { AttendancePanel } from '../features/attendance/AttendancePanel';
+import { AttendancePanel } from './AttendancePanel/AttendancePanel';
 import { Revenuefinance } from './Revenuefinance';
 import { AdminPasswordRequests } from './AdminPasswordRequests';
 // import FinancialSummary from '../features/finance/FinancialSummary';
@@ -17,7 +17,6 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ 
   onOpenPeriodAttendance, 
   onOpenTeacherSalaryPanel, 
-  // onOpenStaffManagement // <--- Naya prop receive kiya
 }) => {
   const students = useAppSelector((state: any) => state.students.students || []);
   const teachers = useAppSelector((state: any) => state.teachers?.teachers || []);
@@ -142,9 +141,7 @@ const totalFeeCollected = students.filter((s: any) => s.feeStatus === "Paid").re
       </div>
       
 
-       {/* <div style={{ width: '100%', background: '#111827', borderRadius: '14px', border: '1px solid #1f2937', padding: '20px', boxSizing: 'border-box' }}>
-        <FinancialSummary />
-      </div> */}
+      
        
     </div> 
 

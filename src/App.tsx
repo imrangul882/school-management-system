@@ -2,7 +2,7 @@ import './App.css';
 import { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { StudentPortal } from './components/StudentPortal';
-import { PeriodAttendancePanel } from './features/attendance/PeriodAttendancePanel';
+import PeriodAttendancePanel from './components/AttendancePanel/PeriodAttendancePanel';
 import { TeacherSalaryPanel } from './features/attendance/TeacherSalaryPanel'; 
 import { Navbar } from './components/Navbar';
 import { CalculatorModal } from './components/CalculatorModal';

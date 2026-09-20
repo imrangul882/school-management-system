@@ -2,8 +2,8 @@ import { configureStore } from '@reduxjs/toolkit';
 import studentReducer from '../features/students/studentSlice';
 import teacherReducer from '../features/teachers/teacherSlice';
 import financeReducer from '../features/finance/financeSlice';
-import attendanceReducer from '../features/attendance/attendanceSlice';
-import periodAttendanceReducer from '../features/attendance/periodAttendanceSlice'; 
+import attendanceReducer from '../components/AttendancePanel/attendanceSlice';
+import periodAttendanceReducer from '../components/AttendancePanel/periodAttendanceSlice'; 
 import teacherAttendanceReducer from '../features/attendance/teacherAttendanceSlice'; 
 import staffReducer from '../features/finance/staffSlice';
 

@@ -1,9 +1,9 @@
  import React, { useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../../app/hooks';
 import { fetchAttendanceFromSupabase, addThumbInToSupabase, updateThumbOutInSupabase, addSmsLog } from './attendanceSlice';
-import { ClassSectionFilters } from './ClassSectionFilters';
-import { InsideSchoolTable } from './InsideSchoolTable';
-import { WhatsAppLogsPanel } from './WhatsAppLogsPanel';
+import { ClassSectionFilters } from '../../features/attendance/ClassSectionFilters';
+import { InsideSchoolTable } from '../../features/attendance/InsideSchoolTable';
+import { WhatsAppLogsPanel } from '../../features/attendance/WhatsAppLogsPanel';
 
 export const AttendancePanel: React.FC = () => {
   const dispatch = useAppDispatch();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '../app/hooks';
 import { updateFeeStatus } from '../features/students/studentSlice';
-import { fetchPeriodAttendanceFromSupabase } from '../features/attendance/periodAttendanceSlice';
+import { fetchPeriodAttendanceFromSupabase } from './AttendancePanel/periodAttendanceSlice';
 import { supabase } from '../supabaseClient';
 
 interface StudentPortalProps {
