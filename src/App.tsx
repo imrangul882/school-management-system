@@ -18,6 +18,8 @@ export default function App() {
     if (view === 'teacher-portal') return 'teacherPortal';
     if (view === 'student-portal') return 'portal';
     if (view === 'staff-management') return 'staff-management';
+
+    if (view === 'period-attendance') return 'period-attendance';
     return 'main';
   });
 
@@ -73,7 +75,7 @@ export default function App() {
     }
   };
 
-  const isDedicatedPortal = currentView === 'portal' || currentView === 'teacherPortal';
+  const isDedicatedPortal = currentView === 'portal' || currentView === 'teacherPortal' || currentView === 'period-attendance' ||currentView === 'staff-management';
   const searchParams = new URLSearchParams(window.location.search);
   const isFromAdmin = searchParams.get('from') === 'admin';
 

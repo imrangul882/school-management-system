@@ -5,12 +5,17 @@ import { DailyAttendanceTab } from './DailyAttendanceTab';
 import { MonthlyReportTab } from './MonthlyReportTab';
 
 interface PeriodAttendancePanelProps {
-  onBack: () => void;
+  onBack?: () => void; // onBack ko optional (?) bana diya taake error na aaye
 }
 
 export const PeriodAttendancePanel: React.FC<PeriodAttendancePanelProps> = ({ onBack }) => {
   const dispatch = useAppDispatch();
   
+  // URL check karna ke aya yeh link ke zariye khula hai ya nahi
+  const queryParams = new URLSearchParams(window.location.search);
+  const currentView = queryParams.get('view');
+  const isLinkedView = currentView === 'period-attendance';
+
   // Redux Data Hooks with safe fallbacks
   const students = useAppSelector((state: any) => state.students?.students || []);
   const attendanceRecords = useAppSelector((state: any) => state.periodAttendance?.periodRecords || []);
@@ -90,7 +95,7 @@ export const PeriodAttendancePanel: React.FC<PeriodAttendancePanelProps> = ({ on
   };
 
   return (
-    <div style={{ background: '#fff', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', width: '100%', boxSizing: 'border-box' }}>
+    <div style={{ background: '#51754d', padding: '25px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', width: '100%', boxSizing: 'border-box' }}>
       {/* Header & Back Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
@@ -99,12 +104,16 @@ export const PeriodAttendancePanel: React.FC<PeriodAttendancePanelProps> = ({ on
             Tablet & Laptop friendly interface for teachers & admin.
           </p>
         </div>
-        <button 
-          onClick={onBack}
-          style={{ background: '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
-        >
-          ⬅️ Back to Dashboard
-        </button>
+
+        {/* Condition: Agar link ke zariye khula hai toh button nahi dikhega, warna dikhega */}
+        {!isLinkedView && onBack && (
+          <button 
+            onClick={onBack}
+            style={{ background: '#64748b', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+          >
+            ⬅️ Back to Dashboard
+          </button>
+        )}
       </div>
 
       {/* Tabs Navigation Buttons */}

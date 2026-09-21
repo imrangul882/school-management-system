@@ -13,7 +13,7 @@ export interface AttendanceRecord {
   outTime?: string;
   pickedBy?: string;
   status: 'In School' | 'Left School';
-  created_at?: string; // 💡 Date track karne ke liye
+  created_at?: string; 
 }
 
 interface AttendanceState {

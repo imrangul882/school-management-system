@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
 export const AdminPasswordRequests = () => {
@@ -33,7 +33,7 @@ export const AdminPasswordRequests = () => {
 
   useEffect(() => {
     fetchRequests();
-    const interval = setInterval(fetchRequests, 10000);
+    const interval = setInterval(fetchRequests, 1000);
     return () => clearInterval(interval);
   }, []);
 
